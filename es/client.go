@@ -32,7 +32,25 @@ func (es *ES) QueryKtag() string {
 	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
 		request.Index = []string{"ktag"}
 		request.Pretty = true
-		size := 1000
+		size := 100
+		request.Size = &size
+		request.Source = []string{"_id","weight","deleted","keywords","name","parent_id","stats"}
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	defer rsp.Body.Close()
+	buffer,_ := ioutil.ReadAll(rsp.Body)
+	return string(buffer)
+}
+
+func (es *ES) QueryKtagByID(id string) string {
+
+	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
+		request.Index = []string{"ktag"}
+		request.Pretty = true
+		request.Query = "_source:\"{id:\"" + id +"\"}\""
+		size := 1
 		request.Size = &size
 	})
 	if err != nil {
@@ -67,16 +85,13 @@ func (es *ES) QueryItem(params map[string]interface{}) string {
 		request.Index = []string{"item"}
 		request.Pretty = true
 		request.Query = queryStr
-		request.Source = []string{"id"}
+		request.Source = []string{"_id"}
 	})
 
 	if err != nil {
 		log.Println(err)
 	}
 	buffer ,err := ioutil.ReadAll(rsp.Body)
-	//rMap := new(map[string]interface{})
-	//json.Unmarshal(buffer,rMap)
-	//result := fmt.Sprintf("%v",(*rMap)["hits"].(map[string]interface{})["hits"].(map[string]interface{})[])
 
 	result := string(buffer)
 	if err != nil {
@@ -98,4 +113,43 @@ func (es *ES) QueryItemByID(id string) string {
 	}
 	buffer, err := ioutil.ReadAll(rsp.Body)
 	return string(buffer)
+}
+
+func (es *ES) QueryPapers(params map[string]interface{}) string {
+	//开头 {
+	queryStr := "_source:\"{"
+	for k,v := range params {
+		if v == "" {
+			continue
+		}
+		queryStr += k+`:"`+fmt.Sprintf("%v",v)+`",`
+	}
+	if queryStr != "_source:\"{" {
+		//去掉末尾 ','
+		queryStr = queryStr[:len(queryStr)-1]
+		//末尾的 }
+		queryStr += "}\""
+	}else {
+		queryStr = ""
+	}
+
+	fmt.Println("--->",queryStr)
+	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
+		request.Index = []string{"omega_paper"}
+		request.Pretty = true
+		request.Query = queryStr
+		request.Source = []string{"_id","cat","deleted","districts","doc","edu","flow_stats","grade","item_ids","item_tpls","name","remark","uid","year"}
+	})
+
+	if err != nil {
+		log.Println(err)
+	}
+	buffer ,err := ioutil.ReadAll(rsp.Body)
+
+	result := string(buffer)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return result
 }
