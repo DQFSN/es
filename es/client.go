@@ -1,11 +1,13 @@
 package es
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io/ioutil"
 	"log"
 	"mq/model"
@@ -30,7 +32,6 @@ func (es *ES) NewClient() error {
 
 	return nil
 }
-
 
 func (es *ES) QueryKtag() string {
 
@@ -68,22 +69,17 @@ func (es *ES) QueryKtagByID(id string) string {
 
 func (es *ES) UpdateKtag(ktag model.Ktag) string {
 
+	ktagWithID := changeIDLabel(ktag)
 
- 	//params := make(map[string]interface{})
- 	//params["doc"] = param
+	updateMap := make(map[string]interface{})
+	updateMap["doc"] = ktagWithID
+	updateBodyByte, _ :=json.Marshal(updateMap)
 
-	paramsByte,_ := json.Marshal(ktag)
-	paramsStr := string(paramsByte)
-	/*
-	此处是因为，mongo原始数据中有'_id'字段，但是从mongo --> ES 时，'_id'为ES保留字段，
-	顾将'_id'-->'id',但是web请求还是'_id',
-	因此有了这么一步转换
-	*/
-	paramsStr = strings.Replace(paramsStr,"_id","id",1)
-	fmt.Println(paramsStr)
-	req := esapi.UpdateByQueryRequest{
-		Index: []string{"ktag"},
-		Body: strings.NewReader(fmt.Sprintf("{\"query\":%v}",paramsStr)),
+	fmt.Println(string(updateBodyByte))
+	req := esapi.UpdateRequest{
+		Index: "ktag",
+		DocumentID: ktag.Id,
+		Body: bytes.NewReader(updateBodyByte),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
@@ -95,6 +91,32 @@ func (es *ES) UpdateKtag(ktag model.Ktag) string {
 	defer rsp.Body.Close()
 	buffer,_ := ioutil.ReadAll(rsp.Body)
 	return string(buffer)
+}
+
+func (es *ES) CreateKtag(ktag model.Ktag) string {
+
+	id := primitive.NewObjectID()
+
+	ktag.Id = id.Hex()
+	ktagWithID := changeIDLabel(ktag)
+	bodyBytes, _ :=json.Marshal(ktagWithID)
+
+	req := esapi.CreateRequest{
+		Index: "ktag",
+		DocumentID: id.Hex(),
+		Body: bytes.NewReader(bodyBytes),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
+	defer cancel()
+	rsp, err := req.Do(ctx,es.Client)
+	checkErr(err)
+	defer rsp.Body.Close()
+
+	buffer,_ := ioutil.ReadAll(rsp.Body)
+
+	return string(buffer)
+
 }
 
 func (es *ES) QueryItem(params map[string]interface{}) string {
@@ -152,6 +174,7 @@ func (es *ES) QueryItemByID(id string) string {
 }
 
 func (es *ES) QueryPapers(params map[string]interface{}) string {
+
 	//开头 {
 	queryStr := "_source:\"{"
 	for k,v := range params {
@@ -188,4 +211,19 @@ func (es *ES) QueryPapers(params map[string]interface{}) string {
 	}
 
 	return result
+}
+
+func changeIDLabel(in interface{}) map[string]interface{} {
+	paramsByte,_ := json.Marshal(in)
+	paramsStr := string(paramsByte)
+
+	/*
+		此处是因为，mongo原始数据中有'_id'字段，但是从mongo --> ES 时，'_id'为ES保留字段，
+		顾将'_id'-->'id',但是web请求还是'_id',
+		因此有了这么一步转换
+	*/
+	paramsStr = strings.Replace(paramsStr,"_id","id",1)
+	out := make(map[string]interface{})
+	_ = json.Unmarshal([]byte(paramsStr),&out)
+	return out
 }

@@ -256,7 +256,7 @@
 
    - Url 
 
-     /api/ktags
+     GET   /api/ktags
 
    - 参数     
 
@@ -298,7 +298,7 @@
 
   - URL
 
-    api/ktag/50e227000000000000001102
+    GET 	 api/ktag/50e227000000000000001102
 
   - 参数
 
@@ -331,6 +331,178 @@
     	"type": 1102,
     	"weight": 0,
     	"wiki": ""
+    }
+    ```
+
+- 修改知识点
+
+  - URL
+
+    PATCH		api/ktag/50e227000000000000001102
+
+  - 参数
+
+    ```json
+    {
+    	"name": "知识点",
+    	"deleted": false,
+    	"weight": 0,
+    	"wiki": "",
+    	"assess_dirs": [],
+    	"teaching_objective": {
+    		"desc": "",
+    		"lesson_count": 0,
+    		"level": "A"
+    	},
+    	"keywords": [],
+    	"desc_tex": "",
+    	"extra_desc_tex": ""
+    }
+    ```
+
+    
+
+  - Response
+
+    ```json
+    {
+    	"_id": "50e227000000000000001102",
+    	"assess_dirs": [],
+    	"deleted": false,
+    	"desc": "",
+    	"desc_tex": "",
+    	"extra_desc": "",
+    	"extra_desc_tex": "",
+    	"keywords": [],
+    	"name": "知识点",
+    	"parent_id": null,
+    	"preconditions": [],
+    	"stats": {
+    		"avg_diff": 2.8873854212134438,
+    		"freq": 0.5153846153846153
+    	},
+    	"teaching_objective": {
+    		"desc": "",
+    		"lesson_count": 0.0,
+    		"level": "A"
+    	},
+    	"type": 1102,
+    	"weight": 0,
+    	"wiki": ""
+    }
+    ```
+
+- 增加子节点
+
+  - URL
+
+    PUT		api/ktag
+
+  - 参数
+
+    ```json
+    {
+    	"_id": null,
+    	"name": "测试知识点的子节点",
+    	"type": 1102,
+    	"weight": 0,
+    	"wiki": "单身的",
+    	"desc": "",
+    	"desc_tex": "",
+    	"extra_desc": "",
+    	"extra_desc_tex": "",
+    	"deleted": false,
+    	"assess_dirs": [1, 2],
+    	"path": "知识点 > 知识点的子节点",
+    	"parent_id": "50e227000000000000001102",
+    	"teaching_objective": {
+    		"desc": "单身的",
+    		"level": "A",
+    		"lesson_count": 10
+    	},
+    	"stats": {
+    		"freq": 0,
+    		"avg_diff": 0
+    	},
+    	"keywords": ["测试"]
+    }
+    ```
+
+    
+
+  - response
+
+    ```json
+    {
+    	"_id": "5fcf3081210b2863adb27360",
+    	"assess_dirs": [1, 2],
+    	"deleted": false,
+    	"desc": "",
+    	"desc_tex": "",
+    	"extra_desc": "",
+    	"extra_desc_tex": "",
+    	"keywords": ["测试"],
+    	"name": "测试知识点的子节点",
+    	"parent_id": "50e227000000000000001102",
+    	"preconditions": [],
+    	"stats": {
+    		"avg_diff": 0.0,
+    		"freq": 0.0
+    	},
+    	"teaching_objective": {
+    		"desc": "单身的",
+    		"lesson_count": 10.0,
+    		"level": "A"
+    	},
+    	"type": 1102,
+    	"weight": 0,
+    	"wiki": "单身的"
+    }
+    ```
+
+- 删除节点(软删除)
+
+  - URL
+
+    PATCH	api/ktag/5fcf3081210b2863adb27360
+
+  - 参数
+
+    ```json
+    {
+      "deleted":true
+    }
+    ```
+
+    
+
+  - response
+
+    ```json
+    {
+    	"_id": "5fcf3081210b2863adb27360",
+    	"assess_dirs": [1, 2],
+    	"deleted": true,
+    	"desc": "",
+    	"desc_tex": "",
+    	"extra_desc": "",
+    	"extra_desc_tex": "",
+    	"keywords": ["测试"],
+    	"name": "测试知识点的子节点",
+    	"parent_id": "50e227000000000000001102",
+    	"preconditions": [],
+    	"stats": {
+    		"avg_diff": 0.0,
+    		"freq": 0.0
+    	},
+    	"teaching_objective": {
+    		"desc": "单身的",
+    		"lesson_count": 10.0,
+    		"level": "A"
+    	},
+    	"type": 1102,
+    	"weight": 0,
+    	"wiki": "单身的"
     }
     ```
 
