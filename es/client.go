@@ -1,11 +1,15 @@
 package es
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"io/ioutil"
 	"log"
+	"time"
 )
 
 type ES struct {
@@ -53,6 +57,36 @@ func (es *ES) QueryKtagByID(id string) string {
 		size := 1
 		request.Size = &size
 	})
+	if err != nil {
+		log.Println(err)
+	}
+	defer rsp.Body.Close()
+	buffer,_ := ioutil.ReadAll(rsp.Body)
+	return string(buffer)
+}
+
+func (es *ES) UpdateKtag(param map[string]interface{}) string {
+
+	for k,v := range param {
+		if v == "" {
+			delete(param, k)
+		}
+	}
+
+ 	params := make(map[string]interface{})
+ 	params["doc"] = param
+
+	paramsStr,_ := json.Marshal(params)
+	fmt.Println(string(paramsStr))
+	req := esapi.UpdateRequest{
+		Index: "ktag",
+		DocumentID: param["docID"].(string),
+		Body: bytes.NewReader(paramsStr),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
+	defer cancel()
+	rsp, err := req.Do(ctx,es.Client)
 	if err != nil {
 		log.Println(err)
 	}
