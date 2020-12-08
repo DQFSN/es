@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -54,7 +53,7 @@ func (c *MyClient) Disconnect() {
 	}
 }
 
-func (c *MyClient) Query(coll string) (result []string) {
+func (c *MyClient) Query(coll string) (result []*map[string]interface{}) {
 	collection := c.Client.Database("bison").Collection(coll)
 	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
 	defer cancel()
@@ -63,11 +62,13 @@ func (c *MyClient) Query(coll string) (result []string) {
 	cur,err := collection.Find(ctx,bson.D{},&options.FindOptions{Limit: &limit})
 	checkErr(err)
 
-	for cur.Next(context.Background()) {
-		record := fmt.Sprintf("%s",cur.Current)
-		strings.Replace(record,"_id","id",1)
-		result = append(result,strings.Replace(record,"_id","id",1))
+	if err :=cur.All(context.Background(),&result);err != nil {
+		fmt.Println(err)
 	}
+	//for cur.Next(context.Background()) {
+	//	record := fmt.Sprintf("%s",cur.Current)
+	//	result = append(result,strings.Replace(record,"_id","id",1))
+	//}
 
 	return
 }

@@ -1,7 +1,6 @@
 package es
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +8,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"io/ioutil"
 	"log"
+	"mq/model"
+	"strings"
 	"time"
 )
 
@@ -65,23 +66,24 @@ func (es *ES) QueryKtagByID(id string) string {
 	return string(buffer)
 }
 
-func (es *ES) UpdateKtag(param map[string]interface{}) string {
+func (es *ES) UpdateKtag(ktag model.Ktag) string {
 
-	for k,v := range param {
-		if v == "" {
-			delete(param, k)
-		}
-	}
 
- 	params := make(map[string]interface{})
- 	params["doc"] = param
+ 	//params := make(map[string]interface{})
+ 	//params["doc"] = param
 
-	paramsStr,_ := json.Marshal(params)
-	fmt.Println(string(paramsStr))
-	req := esapi.UpdateRequest{
-		Index: "ktag",
-		DocumentID: param["docID"].(string),
-		Body: bytes.NewReader(paramsStr),
+	paramsByte,_ := json.Marshal(ktag)
+	paramsStr := string(paramsByte)
+	/*
+	此处是因为，mongo原始数据中有'_id'字段，但是从mongo --> ES 时，'_id'为ES保留字段，
+	顾将'_id'-->'id',但是web请求还是'_id',
+	因此有了这么一步转换
+	*/
+	paramsStr = strings.Replace(paramsStr,"_id","id",1)
+	fmt.Println(paramsStr)
+	req := esapi.UpdateByQueryRequest{
+		Index: []string{"ktag"},
+		Body: strings.NewReader(fmt.Sprintf("{\"query\":%v}",paramsStr)),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
