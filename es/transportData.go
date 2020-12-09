@@ -20,7 +20,11 @@ func moveDataFromMGToES() {
 	mgclient.Connect()
 	defer mgclient.Disconnect()
 
-	colls := []string{"circle","cluster","hydra","item","item_tag","ktag","omega_paper","op_log","super_cluster","user"}
+	//item
+	//knowledge_tag
+	//paper
+	colls := []string{"paper"}
+	//colls := []string{"circle","cluster","hydra","item","item_tag","ktag","omega_paper","op_log","super_cluster","user"}
 
 	for _, coll := range colls {
 

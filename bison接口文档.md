@@ -119,7 +119,7 @@
 
   - render_kcode=1
   - &with_tagging=1
-  - &paper_name_as_origin=1
+  - &paper_name_as_origin=16
   - &with_hydra=1
 
 - response

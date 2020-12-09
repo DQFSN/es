@@ -54,7 +54,8 @@ func (c *MyClient) Disconnect() {
 }
 
 func (c *MyClient) Query(coll string) (result []*map[string]interface{}) {
-	collection := c.Client.Database("bison").Collection(coll)
+	//collection := c.Client.Database("bison").Collection(coll)
+	collection := c.Client.Database("ir").Collection(coll)
 	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
 	defer cancel()
 

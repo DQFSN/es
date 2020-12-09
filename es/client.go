@@ -33,14 +33,21 @@ func (es *ES) NewClient() error {
 	return nil
 }
 
-func (es *ES) QueryKtag() string {
+func (es *ES) QueryKtag(params map[string]interface{}) string {
 
+	queryStr := ""
+	if params["type"] != "" {
+		bodyBytes,_ := json.Marshal(params)
+		queryStr = `_source:"`+string(bodyBytes)+`"`
+	}
+
+	log.Printf("--------------------QueryKtag-------------------\n %v\n%v\n",params,queryStr)
+	//es.Client.m
 	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
 		request.Index = []string{"ktag"}
 		request.Pretty = true
-		size := 100
-		request.Size = &size
-		request.Source = []string{"_id","weight","deleted","keywords","name","parent_id","stats"}
+		request.Query = queryStr
+		request.Source = []string{"_id","weight","deleted","keywords","name","parent_id","stats","type"}
 	})
 	if err != nil {
 		log.Println(err)
@@ -51,6 +58,8 @@ func (es *ES) QueryKtag() string {
 }
 
 func (es *ES) QueryKtagByID(id string) string {
+
+	log.Printf("--------------------QueryKtagByID-------------------\n%v\n",id)
 
 	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
 		request.Index = []string{"ktag"}
@@ -82,6 +91,8 @@ func (es *ES) UpdateKtag(ktag model.Ktag) string {
 		Body: bytes.NewReader(updateBodyByte),
 	}
 
+	log.Printf("--------------------UpdateKtag-------------------\n%v\n%v\n",ktag,string(updateBodyByte))
+
 	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
 	defer cancel()
 	rsp, err := req.Do(ctx,es.Client)
@@ -107,6 +118,9 @@ func (es *ES) CreateKtag(ktag model.Ktag) string {
 		Body: bytes.NewReader(bodyBytes),
 	}
 
+	log.Printf("--------------------CreateKtag-------------------\n%v\n%v\n",ktag,string(bodyBytes))
+
+
 	ctx, cancel := context.WithTimeout(context.Background(),time.Second*10)
 	defer cancel()
 	rsp, err := req.Do(ctx,es.Client)
@@ -120,25 +134,21 @@ func (es *ES) CreateKtag(ktag model.Ktag) string {
 }
 
 func (es *ES) QueryItem(params map[string]interface{}) string {
-	//开头 {
-	queryStr := "_source:\"{"
+	queryStr := ""
+
 	for k,v := range params {
-		if k == "page_num" || k == "page_size" || v == "" {
-			continue
+		if v == "" || v == 0 {
+			delete(params,k)
 		}
-		queryStr += k+`:"`+fmt.Sprintf("%v",v)+`",`
-	}
-	if queryStr != "_source:\"{" {
-		//去掉末尾 ','
-		queryStr = queryStr[:len(queryStr)-1]
-		//末尾的 }
-		queryStr += "}\""
-	}else {
-		queryStr = ""
 	}
 
+	if len(params) > 0 {
+		bodyBytes, _ := json.Marshal(params)
+		queryStr = `_source:"`+string(bodyBytes)+`"`
+	}
 
-	fmt.Println("--->",queryStr)
+	log.Printf("--------------------QueryItem-------------------\n%v\n%v\n",params,queryStr)
+
 	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
 		request.Index = []string{"item"}
 		request.Pretty = true
@@ -161,9 +171,13 @@ func (es *ES) QueryItem(params map[string]interface{}) string {
 
 func (es *ES) QueryItemByID(id string) string {
 
+	queryStr := "_source:\"{id:\""+id+"\"}\""
+
+	log.Printf("--------------------QueryItemByID-------------------\n%v\n",queryStr)
+
 	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
 		request.Index = []string{"item"}
-		request.Query = "_source:\"{id:\""+id+"\"}\""
+		request.Query = queryStr
 		request.Pretty = true
 	})
 	if err != nil {
@@ -173,26 +187,23 @@ func (es *ES) QueryItemByID(id string) string {
 	return string(buffer)
 }
 
-func (es *ES) QueryPapers(params map[string]interface{}) string {
+func (es *ES) QueryOmegaPapers(params map[string]interface{}) string {
 
-	//开头 {
-	queryStr := "_source:\"{"
+	queryStr := ""
+
 	for k,v := range params {
-		if v == "" {
-			continue
+		if v == "" || v == 0 {
+			delete(params,k)
 		}
-		queryStr += k+`:"`+fmt.Sprintf("%v",v)+`",`
-	}
-	if queryStr != "_source:\"{" {
-		//去掉末尾 ','
-		queryStr = queryStr[:len(queryStr)-1]
-		//末尾的 }
-		queryStr += "}\""
-	}else {
-		queryStr = ""
 	}
 
-	fmt.Println("--->",queryStr)
+	if len(params) > 0 {
+		bodyBytes, _ := json.Marshal(params)
+		queryStr = `_source:"`+string(bodyBytes)+`"`
+	}
+
+	log.Printf("--------------------QueryOmegaPapers-------------------\n%v\n%v\n",params,queryStr)
+
 	rsp, err := es.Client.Search(func(request *esapi.SearchRequest) {
 		request.Index = []string{"omega_paper"}
 		request.Pretty = true
@@ -211,6 +222,34 @@ func (es *ES) QueryPapers(params map[string]interface{}) string {
 	}
 
 	return result
+}
+
+func (es *ES) GetPapers(params map[string]interface{}) string {
+	queryStr := ""
+
+	for k, v := range params {
+		if v == "" {
+			delete(params,k)
+		}
+	}
+
+	if len(params) > 0 {
+		bodyBytes,_ := json.Marshal(params)
+		queryStr = `_source:"`+string(bodyBytes)+`"`
+	}
+
+	log.Printf("--------------------GetPapers-------------------\n%v\n%v\n",params,queryStr)
+
+	rsp,_ := es.Client.Search(func(request *esapi.SearchRequest) {
+		request.Index = []string{"paper"}
+		request.Pretty = true
+		request.Query = queryStr
+	})
+	defer rsp.Body.Close()
+	buffer,_ := ioutil.ReadAll(rsp.Body)
+
+	return string(buffer)
+
 }
 
 func changeIDLabel(in interface{}) map[string]interface{} {

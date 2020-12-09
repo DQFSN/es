@@ -7,10 +7,10 @@ import (
 
 func Test_Client(t *testing.T) {
 	var es ES
-	es.NewClient()
-	fmt.Println(es.QueryKtag())
-
+	_ = es.NewClient()
 	params := make(map[string]interface{})
+	fmt.Println(es.QueryKtag(params))
+
 	params["difficulty"] = 1
 	params["keywords"] = ""
 	params["item_type"] = 1000
