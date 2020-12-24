@@ -8,7 +8,6 @@ import (
 )
 
 func	getKtags (ctx *gin.Context) {
-
 	params := make(map[string]interface{})
 	params["type"] = ctx.Query("type")
 	var client es.ES
